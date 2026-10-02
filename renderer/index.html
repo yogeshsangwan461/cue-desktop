@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Cue</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self'"><link rel="stylesheet" href="styles.css">
+</head>
+<body class="compact">
+  <main class="shell">
+
+    <!-- ── Bar (always visible) ── -->
+    <section class="bar">
+      <button class="icon-btn brand" onclick="togglePanel()" title="Expand">
+        <svg width="17" height="17" viewBox="0 0 17 17" fill="none">
+          <path d="M8.5 2 14 5.2v6.3l-5.5 3.2L3 11.5V5.2L8.5 2Z" stroke="currentColor" stroke-width="1.25"/>
+          <path d="M6.1 8.5h4.8M8.5 6.1v4.8" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/>
+        </svg>
+      </button>
+
+      <div class="drag-zone" ondblclick="togglePanel()">
+        <span class="brand-name">Cue</span>
+        <span class="live-dot" id="live-dot"></span>
+        <span class="session-type-badge" id="session-type-badge"></span>
+      </div>
+
+      <div class="prompt-wrap">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <circle cx="6" cy="6" r="4" stroke="currentColor" stroke-width="1.35"/>
+          <path d="m9.5 9.5 2.5 2.5" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"/>
+        </svg>
+        <input id="prompt" type="text" placeholder="Ask anything…" autocomplete="off" spellcheck="false">
+      </div>
+
+      <div class="model-switch">
+        <button class="model-btn active" data-model="openai">ChatGPT</button>
+        <button class="model-btn" data-model="claude">Claude</button>
+        <button class="model-btn" data-model="custom">Other</button>
+      </div>
+
+      <div class="mode-switch">
+        <button class="mode-btn active" data-mode="interview">Interview</button>
+        <button class="mode-btn" data-mode="code">Code</button>
+        <button class="mode-btn" data-mode="chat">Chat</button>
+      </div>
+
+      <button class="icon-btn" id="mic-btn" onclick="toggleRecording()" title="Microphone">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+          <rect x="4.8" y="1.5" width="5.4" height="7.8" rx="2.7" stroke="currentColor" stroke-width="1.3"/>
+          <path d="M2.5 7.5a5 5 0 0 0 10 0M7.5 12.5v1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+      </button>
+
+      <button class="icon-btn" onclick="captureScreen()" title="Screenshot (Ctrl+Shift+Space)">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+          <rect x="1.5" y="2.8" width="12" height="9.4" rx="1.6" stroke="currentColor" stroke-width="1.3"/>
+          <circle cx="7.5" cy="7.5" r="2" stroke="currentColor" stroke-width="1.3"/>
+        </svg>
+      </button>
+
+      <button class="start-btn" id="start-btn" onclick="toggleSession()">
+        <svg width="11" height="11" viewBox="0 0 11 11" fill="currentColor" id="start-icon">
+          <path d="M3 1.8 9 5.5 3 9.2V1.8Z"/>
+        </svg>
+        <span id="start-label">Start</span>
+      </button>
+
+      <button class="icon-btn" onclick="toggleHistory()" title="Session history (Ctrl+Shift+H)">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+          <circle cx="7.5" cy="7.5" r="5.5" stroke="currentColor" stroke-width="1.3"/>
+          <path d="M7.5 4.5v3.2l2 2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+      </button>
+
+      <button class="icon-btn" onclick="toggleSettingsPanel()" title="Settings (Ctrl+,)">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+          <circle cx="7.5" cy="7.5" r="2" stroke="currentColor" stroke-width="1.3"/>
+          <path d="M7.5 1.5v1.3M7.5 12.2v1.3M1.5 7.5h1.3M12.2 7.5h1.3M3.4 3.4l.9.9M10.7 10.7l.9.9M10.7 3.4l-.9.9M4.3 10.7l-.9.9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+      </button>
+
+      <button class="icon-btn" onclick="togglePanel()" title="Expand / compact">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+          <path d="M3.5 5.5h8M3.5 9.5h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+      </button>
+
+      <button class="icon-btn close-btn" onclick="window.cue.hide()" title="Hide (Ctrl+\)">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+          <path d="m4.5 4.5 6 6m0-6-6 6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </section>
+
+    <!-- ── Panel (expandable) ── -->
+    <section class="panel">
+
+      <!-- Panel header -->
+      <div class="panel-head">
+        <button class="pill" id="stealth-row" onclick="toggleStealth()">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M1 6s1.8-4 5-4 5 4 5 4-1.8 4-5 4-5-4-5-4Z" stroke="currentColor" stroke-width="1.1"/>
+            <circle cx="6" cy="6" r="1.4" stroke="currentColor" stroke-width="1.1"/>
+          </svg>
+          <span>Private</span>
+          <span class="toggle-pill active" id="stealth-toggle"><span class="toggle-thumb"></span></span>
+        </button>
+        <div class="model-switch panel-provider">
+          <button class="model-btn active" data-model="openai">ChatGPT</button>
+          <button class="model-btn" data-model="claude">Claude</button>
+          <button class="model-btn" data-model="custom">Other</button>
+        </div>
+        <span class="status-pill" id="model-indicator">ChatGPT</span>
+        <div class="mode-switch panel-mode">
+          <button class="mode-btn active" data-mode="interview">Interview</button>
+          <button class="mode-btn" data-mode="code">Code</button>
+          <button class="mode-btn" data-mode="chat">Chat</button>
+        </div>
+        <span class="status-line" id="sub-label">Loading…</span>
+        <span class="status-txt" id="status-txt"></span>
+      </div>
+
+      <!-- Action row -->
+      <div class="action-row">
+        <button class="action-chip active-chip" onclick="suggestResponse()">✦ What should I say?</button>
+        <button class="action-chip" onclick="assistScreen()">Assist</button>
+        <button class="action-chip" id="capture-chip" onclick="captureScreen()">📸 Capture</button>
+        <button class="action-chip" id="solve-chip" onclick="solveShots()">⚡ Solve</button>
+        <button class="action-chip" onclick="suggestFollowup()">Follow-up</button>
+        <button class="action-chip" onclick="recapSession()">Recap</button>
+        <button class="action-chip" onclick="exportTranscript()">Export</button>
+        <button class="action-chip" onclick="clearChat()">Clear</button>
+      </div>
+
+      <!-- Content grid -->
+      <div class="panel-grid">
+        <div class="transcript-section">
+          <div class="section-title">Hearing</div>
+          <div id="transcript-text" class="transcript-text empty">Not listening</div>
+        </div>
+        <div class="response-section" id="response-area"></div>
+      </div>
+
+      <!-- Context files row -->
+      <div class="context-row">
+        <button class="icon-btn small" onclick="addContextFile()" title="Add context file">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M8 1.5H3.5A1.1 1.1 0 0 0 2.4 2.6v8.8A1.1 1.1 0 0 0 3.5 12.5h7a1.1 1.1 0 0 0 1.1-1.1V5L8 1.5Z" stroke="currentColor" stroke-width="1.1"/>
+            <path d="M8 1.5v3.5h3.5M7 7v3M5.5 8.5h3" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <div class="context-chips" id="context-strip"></div>
+      </div>
+
+      <!-- ── Settings overlay ── -->
+
+      <div class="overlay" id="settings-overlay">
+        <div class="overlay-head"><span class="overlay-title">Settings & profile</span><button class="icon-btn small" onclick="toggleSettingsPanel()" aria-label="Close settings">×</button></div>
+        <div class="overlay-body">
+          <div class="settings-section-title">Transcription</div>
+          <label class="settings-row"><span>AssemblyAI key</span><input type="password" id="assembly-key" autocomplete="off" placeholder="Your own API key"></label>
+          <div class="settings-inline-action"><span class="settings-help" id="assembly-key-state"></span><button class="settings-save-btn" id="clear-assembly-key">Remove key</button><button class="settings-save-btn" id="assembly-link">Get a key ↗</button></div>
+          <div class="settings-section-title">Your AI connection</div>
+          <label class="settings-row"><span>Provider</span><select id="provider"><option value="openai">OpenAI / ChatGPT</option><option value="claude">Claude</option><option value="custom">Other provider</option></select></label>
+          <label class="settings-row"><span>Connection</span><select id="connection"><option value="subscription">Subscription</option><option value="api">API key</option></select></label>
+          <div id="subscription-options"><p class="settings-help">Sign in through the official Codex or Claude Code connector. It downloads on first connection. Your account’s access and usage limits apply.</p><div class="settings-inline-action"><button class="settings-save-btn" id="connect">Connect account ↗</button><button class="settings-save-btn" id="check-connection">Check connection</button><span class="settings-help" id="connection-state">Not checked</span></div><pre id="connection-log" class="connection-log" hidden></pre></div>
+          <div id="api-options" hidden><label class="settings-row"><span>Provider key</span><input type="password" id="model-key" autocomplete="off" placeholder="Your own API key"></label><div class="settings-inline-action"><span id="model-key-state" class="settings-help"></span><button class="settings-save-btn" id="clear-model-key">Remove key</button></div><p class="settings-help">API usage is billed separately from chat subscriptions.</p></div>
+          <label class="settings-row" id="base-url-row" hidden><span>API base URL</span><input id="base-url" placeholder="https://api.example.com/v1"></label>
+          <label class="settings-row"><span>Model ID</span><input id="model-id" placeholder="Model available to your account"></label>
+          <p class="settings-help" id="claude-note" hidden>Claude subscription mode uses the official, unmodified Claude Code connector. Claude screenshots require API key mode.</p>
+          <div class="settings-section-title">Overlay</div>
+          <label class="settings-check"><input type="checkbox" id="auto-answer" checked> Automatically answer detected questions</label>
+          <label class="settings-check"><input type="checkbox" id="mic" checked> Microphone (you)</label>
+          <label class="settings-check"><input type="checkbox" id="system" checked> System audio (other speaker)</label>
+          <label class="settings-row"><span>Opacity</span><input type="range" id="overlay-opacity" min="0.25" max="1" step="0.05" value="0.68"></label>
+          <p class="settings-help">Capture protection is on by default. Ctrl+\\ hides/shows the overlay. Ctrl+Shift+\\ stops listening.</p>
+          <div class="settings-section-title">Your profile</div>
+          <div class="settings-inline-action"><button class="settings-save-btn" id="import-profile">Import profile JSON</button><button class="settings-save-btn" id="export-profile">Export profile</button></div>
+          <p class="settings-help">Use the download website’s setup prompt with your AI, then import cue-profile.json. Or fill this in yourself.</p>
+          <label class="settings-row"><span>Your name</span><input id="profile-name" placeholder="Optional"></label>
+          <label class="settings-row"><span>Role / purpose</span><input id="profile-role" placeholder="Role or meeting goal"></label>
+          <label class="settings-block"><span>Personality & voice</span><textarea id="profile-personality" rows="3" placeholder="How you naturally speak"></textarea></label>
+          <label class="settings-block"><span>Answer preferences</span><textarea id="profile-style" rows="2" placeholder="Length, language, structure, words to avoid"></textarea></label>
+          <label class="settings-block"><span>Resume / background</span><textarea id="profile-resume" rows="5" placeholder="Paste your resume as text"></textarea></label>
+          <label class="settings-block"><span>Projects & real STAR stories</span><textarea id="profile-projects" rows="4" placeholder="Situation, task, your actions, factual result"></textarea></label>
+          <div class="settings-section-title">Extra reference documents</div>
+          <button class="settings-save-btn" id="import-document">Add .txt / .md</button><div id="document-list"></div>
+          <p class="settings-help">Have your AI extract PDF or Word resumes into your profile, or paste the text above. Keys are encrypted for your Windows account. Profiles and past answers stay local; relevant context is sent to your selected model for answers.</p>
+          <button class="settings-save-btn" id="open-data">Open local data folder ↗</button>
+          <div class="settings-actions"><button class="settings-save-btn" id="save-settings">Save</button><span class="settings-status" id="settings-status"></span></div>
+        </div>
+      </div>
+
+            <!-- ── History overlay ── -->
+      <div class="overlay" id="history-overlay">
+        <div class="overlay-head">
+          <span class="overlay-title">Session History</span>
+          <button class="icon-btn small" onclick="toggleHistory()">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+              <path d="m3 3 7 7m0-7-7 7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+        <div class="overlay-body" id="history-body">
+          <div class="history-empty">No saved sessions yet.<br>Sessions save automatically when you click Stop.</div>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+node_modules/
+release/
+.cache/
+.env*
+*.log
+test/audit.cjs
+test/smoke.cjs
